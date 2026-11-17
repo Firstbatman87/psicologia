@@ -362,16 +362,16 @@ def editar_atendimento(sessao):
         for paciente in pacientes:
             print(f"{paciente['id']} - {paciente['nome']}")
 
-            try:
-                paciente_id = int(input("\nID do paciente: "))
-            except ValueError:
-                print("\nDigite um ID válido.")
-                return
+        try:
+            paciente_id = int(input("\nID do paciente: "))
+        except ValueError:
+            print("\nDigite um ID válido.")
+            return
 
-            paciente = next(
-                (p for p in pacientes if p["id"] == paciente_id),
-                None
-            )
+        paciente = next(
+            (p for p in pacientes if p["id"] == paciente_id),
+            None
+        )
 
         if paciente is None:
             print("\nPaciente não encontrado.")
