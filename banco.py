@@ -111,6 +111,31 @@ def criar_tabelas():
             END
         """)
 
+with conectar() as conexao:
+    colunas = conexao.execute(
+        "PRAGMA table_info(pacientes)"
+    ).fetchall()
+
+    nomes_colunas = [
+        coluna["name"] for coluna in colunas
+    ]
+
+    if "usuario_id" not in nomes_colunas:
+        conexao.execute(
+            """
+            ALTER TABLE pacientes
+            ADD COLUMN usuario_id INTEGER
+            REFERENCES usuarios(id)
+            """
+        )
+
+    conexao.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS
+        idx_pacientes_usuario_id
+        ON pacientes(usuario_id)
+        """
+    )
 
 def criar_conta(usuario):
     """Armazena uma nova conta no banco de dados."""
