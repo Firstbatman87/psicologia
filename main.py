@@ -528,6 +528,86 @@ def excluir_atendimento(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
+def vincular_paciente(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "cadastrar_pacientes"
+        )
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nVocê não possui pacientes cadastrados.")
+            return
+
+        print("\n=== VINCULAR CONTA DE PACIENTE ===")
+
+        for paciente in pacientes:
+            status = (
+                "Conta vinculada"
+                if paciente["usuario_id"] is not None
+                else "Sem conta vinculada"
+            )
+
+            print(
+                f"\nID: {paciente['id']}"
+                f"\nNome: {paciente['nome']}"
+                f"\nE-mail: {paciente['email'] or 'Não informado'}"
+                f"\nStatus: {status}"
+            )
+
+        paciente_id = input("\nID do paciente: ")
+
+        if not paciente_id.isdigit():
+            print("\nID inválido.")
+            return
+
+        paciente_id = int(paciente_id)
+
+        paciente = next(
+            (
+                p for p in pacientes
+                if p["id"] == paciente_id
+            ),
+            None
+        )
+
+        if paciente is None:
+            print("\nPaciente não encontrado.")
+            return
+
+        if paciente["usuario_id"] is not None:
+            print("\nEsse paciente já possui uma conta vinculada.")
+            return
+
+        if not paciente["email"]:
+            print("\nEsse paciente não possui e-mail cadastrado.")
+            return
+
+        email = input(
+            "\nDigite o e-mail da conta do paciente: "
+        ).strip().lower()
+
+        if email != paciente["email"].strip().lower():
+            print("\nO e-mail não corresponde ao cadastro.")
+            return
+
+        vinculado = banco.vincular_conta_paciente(
+            sessao["usuario_id"],
+            paciente_id,
+            email
+        )
+
+        if vinculado:
+            print("\nConta vinculada com sucesso!")
+        else:
+            print("\nNão foi possível realizar o vínculo.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
@@ -572,6 +652,11 @@ def menu_usuario(sessao):
         ):
             print("9 - Excluir atendimento")
 
+        if permissoes.verificar_permissao(
+            sessao, "cadastrar_pacientes"
+        ):
+            print("10 - Vincular conta de paciente")
+
         print("0 - Encerrar sessão")
 
         opcao = input("\nEscolha uma opção: ")
@@ -610,6 +695,9 @@ def menu_usuario(sessao):
 
         elif opcao == "9":
             excluir_atendimento(sessao)
+
+        elif opcao == "10":
+            vincular_paciente(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")

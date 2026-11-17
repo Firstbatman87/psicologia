@@ -233,7 +233,7 @@ def listar_pacientes(terapeuta_id):
     with conectar() as conexao:
         pacientes = conexao.execute(
             """
-            SELECT id, nome, email, telefone, criado_em
+            SELECT id, nome, email, telefone, criado_em, usuario_id
             FROM pacientes
             WHERE terapeuta_id = ?
             ORDER BY nome
