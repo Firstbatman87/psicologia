@@ -191,6 +191,42 @@ def cadastrar_paciente(terapeuta_id, nome, email, telefone):
 
     return True
 
+def vincular_conta_paciente(terapeuta_id, paciente_id, email):
+    """Vincula uma conta de paciente ao cadastro correspondente."""
+
+    with conectar() as conexao:
+        usuario = conexao.execute(
+            """
+            SELECT id
+            FROM usuarios
+            WHERE email = ?
+            AND tipo = 'paciente'
+            """,
+            (email.strip().lower(),)
+        ).fetchone()
+
+        if usuario is None:
+            return False
+
+        cursor = conexao.execute(
+            """
+            UPDATE pacientes
+            SET usuario_id = ?
+            WHERE id = ?
+            AND terapeuta_id = ?
+            AND LOWER(email) = ?
+            AND usuario_id IS NULL
+            """,
+            (
+                usuario["id"],
+                paciente_id,
+                terapeuta_id,
+                email.strip().lower()
+            )
+        )
+
+        return cursor.rowcount > 0
+
 def listar_pacientes(terapeuta_id):
     """Lista somente os pacientes de determinado terapeuta."""
 
