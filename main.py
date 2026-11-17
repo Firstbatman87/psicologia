@@ -608,6 +608,30 @@ def vincular_paciente(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
+def consultar_proprios_atendimentos(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao,
+            "consultar_proprios_atendimentos"
+        )
+
+        atendimentos = banco.listar_atendimentos_paciente(
+            sessao["usuario_id"]
+        )
+
+        if not atendimentos:
+            print("\nVocê não possui atendimentos registrados.")
+            return
+
+        print("\n=== MEUS ATENDIMENTOS ===")
+
+        for atendimento in atendimentos:
+            print(f"\nID: {atendimento['id']}")
+            print(f"Data: {atendimento['data']}")
+
+    except PermissionError as erro:
+        print(erro)
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
