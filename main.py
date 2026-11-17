@@ -641,6 +641,11 @@ def menu_usuario(sessao):
         print("\n1 - Consultar meus dados")
 
         if permissoes.verificar_permissao(
+            sessao, "consultar_proprios_atendimentos"
+        ):
+            print("11 - Consultar meus atendimentos")
+
+        if permissoes.verificar_permissao(
             sessao, "cadastrar_pacientes"
         ):
             print("2 - Cadastrar pacientes")
@@ -722,6 +727,9 @@ def menu_usuario(sessao):
 
         elif opcao == "10":
             vincular_paciente(sessao)
+
+        elif opcao == "11":
+            consultar_proprios_atendimentos(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
