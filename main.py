@@ -1,0 +1,442 @@
+import banco
+import utilidades
+import seguranca
+import permissoes
+
+def menu():
+    print("\n=== FUNCIONA MENTE ===")
+    print("1 - Entrar na conta")
+    print("2 - Criar conta")
+    print("0 - Sair")
+    return input("Escolha uma opção: ")
+
+
+def criar_conta():
+    print("\n=== CRIAR CONTA ===")
+
+    nome = input("Digite seu nome: ")
+    email = input("Digite seu e-mail: ")
+    senha = input("Digite sua senha: ")
+    tipo = input("Tipo de conta (terapeuta/paciente): ").strip().lower()
+
+    usuario = (nome, email, senha, tipo)
+
+    try:
+        utilidades.verificar_criacao(usuario)
+        banco.criar_conta(usuario)
+        print("\nConta criada com sucesso!")
+
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
+
+
+def entrar_conta():
+    print("\n=== ENTRAR NA CONTA ===")
+
+    email = input("E-mail: ").strip().lower()
+    senha = input("Senha: ")
+
+    usuario = banco.buscar_usuario_por_email(email)
+
+    if usuario is None:
+        print("\nE-mail ou senha incorretos.")
+        return None
+
+    senha_correta = seguranca.verificar_senha(
+        senha,
+        usuario["senha_hash"]
+    )
+
+    if not senha_correta:
+        print("\nE-mail ou senha incorretos.")
+        return None
+
+    print(f"\nBem-vindo(a), {usuario['nome']}!")
+
+    sessao = {
+        "autenticado": True,
+        "usuario_id": usuario["id"],
+        "nome": usuario["nome"],
+        "email": usuario["email"],
+        "tipo": usuario["tipo"]
+    }
+
+    return sessao
+
+def cadastrar_paciente(sessao):
+    """Cadastra um paciente para o terapeuta autenticado."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "cadastrar_pacientes"
+        )
+
+        print("\n=== CADASTRAR PACIENTE ===")
+
+        nome = input("Nome do paciente: ")
+        email = input("E-mail do paciente: ")
+        telefone = input("Telefone do paciente: ")
+
+        if not nome.strip():
+            print("\nO nome não pode ficar vazio.")
+            return
+
+        banco.cadastrar_paciente(
+            sessao["usuario_id"],
+            nome,
+            email,
+            telefone
+        )
+
+        print("\nPaciente cadastrado com sucesso!")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+
+def consultar_pacientes(sessao):
+    """Consulta os pacientes do terapeuta autenticado."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        print("\n=== MEUS PACIENTES ===")
+
+        if not pacientes:
+            print("Nenhum paciente cadastrado.")
+            return
+
+        for paciente in pacientes:
+            print(f"\nID: {paciente['id']}")
+            print(f"Nome: {paciente['nome']}")
+            print(f"E-mail: {paciente['email'] or 'Não informado'}")
+            print(f"Telefone: {paciente['telefone'] or 'Não informado'}")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+def editar_paciente(sessao):
+    """Permite editar um paciente do terapeuta autenticado."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== EDITAR PACIENTE ===")
+
+        try:
+            paciente_id = int(input("ID do paciente: "))
+        except ValueError:
+            print("\nDigite um ID válido.")
+            return
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        paciente = next(
+            (p for p in pacientes if p["id"] == paciente_id),
+            None
+        )
+
+        if paciente is None:
+            print("\nPaciente não encontrado.")
+            return
+
+        print(f"\nEditando: {paciente['nome']}")
+
+        nome = input("Novo nome: ")
+        email = input("Novo e-mail: ")
+        telefone = input("Novo telefone: ")
+
+        if not nome.strip():
+            print("\nO nome não pode ficar vazio.")
+            return
+
+        atualizado = banco.editar_paciente(
+            sessao["usuario_id"],
+            paciente_id,
+            nome,
+            email,
+            telefone
+        )
+
+        if atualizado:
+            print("\nPaciente atualizado com sucesso!")
+        else:
+            print("\nNão foi possível atualizar o paciente.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+def excluir_paciente(sessao):
+    """Exclui um paciente do terapeuta autenticado."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== EXCLUIR PACIENTE ===")
+
+        try:
+            paciente_id = int(input("ID do paciente: "))
+        except ValueError:
+            print("\nDigite um ID válido.")
+            return
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        paciente = next(
+            (p for p in pacientes if p["id"] == paciente_id),
+            None
+        )
+
+        if paciente is None:
+            print("\nPaciente não encontrado.")
+            return
+
+        print(f"\nPaciente: {paciente['nome']}")
+
+        confirmacao = input(
+            "Tem certeza que deseja excluir? (s/n): "
+        ).strip().lower()
+
+        if confirmacao != "s":
+            print("\nExclusão cancelada.")
+            return
+
+        excluido = banco.excluir_paciente(
+            sessao["usuario_id"],
+            paciente_id
+        )
+
+        if excluido:
+            print("\nPaciente excluído com sucesso!")
+        else:
+            print("\nNão foi possível excluir o paciente.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+def registrar_atendimento(sessao):
+    """Registra um atendimento para um paciente."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nVocê ainda não possui pacientes cadastrados.")
+            return
+
+        print("\n=== SELECIONAR PACIENTE ===")
+
+        for paciente in pacientes:
+            print(f"{paciente['id']} - {paciente['nome']}")
+
+        try:
+            paciente_id = int(input("\nID do paciente: "))
+        except ValueError:
+            print("\nDigite um ID válido.")
+            return
+
+        paciente = next(
+            (p for p in pacientes if p["id"] == paciente_id),
+            None
+        )
+
+        if paciente is None:
+            print("\nPaciente não encontrado.")
+            return
+
+        print(f"\n=== ATENDIMENTO DE {paciente['nome'].upper()} ===")
+
+        data = input("Data do atendimento (AAAA-MM-DD): ")
+        anotacoes = input("Anotações do atendimento: ")
+
+        if not data.strip() or not anotacoes.strip():
+            print("\nA data e as anotações são obrigatórias.")
+            return
+
+        banco.registrar_atendimento(
+            sessao["usuario_id"],
+            paciente_id,
+            data,
+            anotacoes
+        )
+
+        print("\nAtendimento registrado com sucesso!")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+def consultar_atendimentos(sessao):
+    """Consulta o histórico de atendimentos de um paciente."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nVocê ainda não possui pacientes cadastrados.")
+            return
+
+        print("\n=== SELECIONAR PACIENTE ===")
+
+        for paciente in pacientes:
+            print(f"{paciente['id']} - {paciente['nome']}")
+
+        try:
+            paciente_id = int(input("\nID do paciente: "))
+        except ValueError:
+            print("\nDigite um ID válido.")
+            return
+
+        paciente = next(
+            (p for p in pacientes if p["id"] == paciente_id),
+            None
+        )
+
+        if paciente is None:
+            print("\nPaciente não encontrado.")
+            return
+
+        atendimentos = banco.listar_atendimentos(
+            sessao["usuario_id"],
+            paciente_id
+        )
+
+        print(f"\n=== HISTÓRICO DE {paciente['nome'].upper()} ===")
+
+        if not atendimentos:
+            print("Nenhum atendimento registrado.")
+            return
+
+        for atendimento in atendimentos:
+            print(f"\nID: {atendimento['id']}")
+            print(f"Data: {atendimento['data']}")
+            print(f"Anotações: {atendimento['anotacoes']}")
+            print("-" * 40)
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+def menu_usuario(sessao):
+    while True:
+        print("\n=== ÁREA DO USUÁRIO ===")
+        print(f"Usuário: {sessao['nome']}")
+        print(f"Tipo: {sessao['tipo']}")
+
+        print("\n1 - Consultar meus dados")
+
+        if permissoes.verificar_permissao(
+            sessao, "cadastrar_pacientes"
+        ):
+            print("2 - Cadastrar pacientes")
+
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("3 - Consultar meus pacientes")
+
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("4 - Editar paciente")
+
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("5 - Excluir paciente")
+
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("6 - Registrar atendimento")
+            print("7 - Consultar atendimentos")
+
+        print("0 - Encerrar sessão")
+
+        opcao = input("\nEscolha uma opção: ")
+
+        if opcao == "1":
+            permissoes.exigir_permissao(
+                sessao, "consultar_perfil"
+            )
+
+            print("\n=== MEUS DADOS ===")
+            print(f"ID: {sessao['usuario_id']}")
+            print(f"Nome: {sessao['nome']}")
+            print(f"E-mail: {sessao['email']}")
+            print(f"Tipo: {sessao['tipo']}")
+
+        elif opcao == "2":
+            cadastrar_paciente(sessao)
+
+        elif opcao == "3":
+            consultar_pacientes(sessao)
+
+        elif opcao == "4":
+            editar_paciente(sessao)
+
+        elif opcao == "5":
+            excluir_paciente(sessao)
+
+        elif opcao == "6":
+            registrar_atendimento(sessao)
+
+        elif opcao == "7":
+            consultar_atendimentos(sessao)
+
+        elif opcao == "0":
+            print("\nSessão encerrada.")
+            break
+
+        else:
+            print("\nOpção inválida.")
+
+def executar():
+    banco.criar_tabelas()
+
+    while True:
+        opcao = menu()
+
+        if opcao == "1":
+            sessao = entrar_conta()
+
+            if sessao is not None:
+                menu_usuario(sessao)
+
+        elif opcao == "2":
+            criar_conta()
+
+        elif opcao == "0":
+            print("\nEncerrando o programa.")
+            break
+
+        else:
+            print("\nOpção inválida.")
+
+
+if __name__ == "__main__":
+    executar()
