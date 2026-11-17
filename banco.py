@@ -360,3 +360,22 @@ def excluir_atendimento(terapeuta_id, atendimento_id):
         )
 
         return cursor.rowcount > 0
+
+def listar_atendimentos_paciente(usuario_id):
+    """Lista as datas dos atendimentos vinculados à conta do paciente."""
+    with conectar() as conexao:
+        atendimentos = conexao.execute(
+            """
+            SELECT
+                atendimentos.id,
+                atendimentos.data
+            FROM atendimentos
+            INNER JOIN pacientes
+                ON atendimentos.paciente_id = pacientes.id
+            WHERE pacientes.usuario_id = ?
+            ORDER BY atendimentos.data DESC
+            """,
+            (usuario_id,)
+        ).fetchall()
+
+        return atendimentos
