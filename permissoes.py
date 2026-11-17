@@ -10,11 +10,14 @@ def verificar_permissao(sessao, permissao):
         "terapeuta": [
             "consultar_perfil",
             "cadastrar_pacientes",
-            "consultar_pacientes"
+            "consultar_pacientes",
+            "consultar_atendimentos",
+            "editar_atendimentos",
+            "excluir_atendimentos"
         ],
-
         "paciente": [
-            "consultar_perfil"
+            "consultar_perfil",
+            "consultar_proprios_atendimentos"
         ]
     }
 
