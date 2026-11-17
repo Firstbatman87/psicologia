@@ -287,3 +287,15 @@ def editar_atendimento(
         )
 
     return cursor.rowcount > 0
+
+def excluir_atendimento(terapeuta_id, atendimento_id):
+    with conectar() as conexao:
+        cursor = conexao.execute(
+            """
+            DELETE FROM atendimentos
+            WHERE id = ? AND terapeuta_id = ?
+            """,
+            (atendimento_id, terapeuta_id)
+        )
+
+        return cursor.rowcount > 0

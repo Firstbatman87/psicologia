@@ -440,6 +440,94 @@ def editar_atendimento(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
+def excluir_atendimento(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nVocê não possui pacientes cadastrados.")
+            return
+
+        print("\n=== EXCLUIR ATENDIMENTO ===")
+
+        for paciente in pacientes:
+            print(f"ID: {paciente['id']} | Nome: {paciente['nome']}")
+
+        paciente_id = input("\nID do paciente: ")
+
+        if not paciente_id.isdigit():
+            print("\nID inválido.")
+            return
+
+        paciente_id = int(paciente_id)
+
+        paciente_encontrado = any(
+            paciente["id"] == paciente_id
+            for paciente in pacientes
+        )
+
+        if not paciente_encontrado:
+            print("\nPaciente não encontrado.")
+            return
+
+        atendimentos = banco.listar_atendimentos(
+            sessao["usuario_id"], paciente_id
+        )
+
+        if not atendimentos:
+            print("\nEsse paciente não possui atendimentos.")
+            return
+
+        for atendimento in atendimentos:
+            print(
+                f"\nID: {atendimento['id']}"
+                f"\nData: {atendimento['data']}"
+                f"\nAnotações: {atendimento['anotacoes']}"
+            )
+
+        atendimento_id = input("\nID do atendimento que deseja excluir: ")
+
+        if not atendimento_id.isdigit():
+            print("\nID inválido.")
+            return
+
+        atendimento_id = int(atendimento_id)
+
+        atendimento_encontrado = any(
+            atendimento["id"] == atendimento_id
+            for atendimento in atendimentos
+        )
+
+        if not atendimento_encontrado:
+            print("\nAtendimento não encontrado.")
+            return
+
+        confirmacao = input(
+            "\nTem certeza de que deseja excluir este atendimento? (s/n): "
+        ).strip().lower()
+
+        if confirmacao != "s":
+            print("\nExclusão cancelada.")
+            return
+
+        excluido = banco.excluir_atendimento(
+            sessao["usuario_id"], atendimento_id
+        )
+
+        if excluido:
+            print("\nAtendimento excluído com sucesso!")
+        else:
+            print("\nNão foi possível excluir o atendimento.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
@@ -479,6 +567,11 @@ def menu_usuario(sessao):
         ):
             print("8 - Editar atendimento")
 
+        if permissoes.verificar_permissao(
+            sessao,  "consultar_pacientes"
+        ):
+            print("9 - Excluir atendimento")
+
         print("0 - Encerrar sessão")
 
         opcao = input("\nEscolha uma opção: ")
@@ -514,6 +607,9 @@ def menu_usuario(sessao):
 
         elif opcao == "8":
             editar_atendimento(sessao)
+
+        elif opcao == "9":
+            excluir_atendimento(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
