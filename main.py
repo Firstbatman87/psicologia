@@ -341,6 +341,105 @@ def consultar_atendimentos(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
+def editar_atendimento(sessao):
+    """Edita um atendimento existente."""
+
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nVocê não possui pacientes cadastrados.")
+            return
+
+        print("\n=== SELECIONAR PACIENTE ===")
+
+        for paciente in pacientes:
+            print(f"{paciente['id']} - {paciente['nome']}")
+
+            try:
+                paciente_id = int(input("\nID do paciente: "))
+            except ValueError:
+                print("\nDigite um ID válido.")
+                return
+
+            paciente = next(
+                (p for p in pacientes if p["id"] == paciente_id),
+                None
+            )
+
+        if paciente is None:
+            print("\nPaciente não encontrado.")
+            return
+
+        atendimentos = banco.listar_atendimentos(
+            sessao["usuario_id"],
+            paciente_id
+        )
+
+        if not atendimentos:
+            print("\nEsse paciente não possui atendimentos.")
+            return
+
+        print("\n=== SELECIONAR ATENDIMENTO ===")
+
+        for atendimento in atendimentos:
+            print(
+                f"ID: {atendimento['id']} | "
+                f"Data: {atendimento['data']}"
+            )
+
+        try:
+            atendimento_id = int(
+            input("\nID do atendimento: ")
+            )
+        except ValueError:
+            print("\nDigite um ID válido.")
+            return
+
+        atendimento = next(
+            (
+            a for a in atendimentos
+            if a["id"] == atendimento_id
+            ),
+            None
+        )
+
+        if atendimento is None:
+            print("\nAtendimento não encontrado.")
+            return
+
+        print("\n=== EDITAR ATENDIMENTO ===")
+        print(f"Data atual: {atendimento['data']}")
+        print(f"Anotações atuais: {atendimento['anotacoes']}")
+
+        data = input("\nNova data (AAAA-MM-DD): ")
+        anotacoes = input("Novas anotações: ")
+
+        if not data.strip() or not anotacoes.strip():
+            print("\nOs campos não podem ficar vazios.")
+            return
+
+        atualizado = banco.editar_atendimento(
+            sessao["usuario_id"],
+            atendimento_id,
+            data,
+            anotacoes
+        )
+
+        if atualizado:
+            print("\nAtendimento atualizado com sucesso!")
+        else:
+            print("\nNão foi possível atualizar o atendimento.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
@@ -375,6 +474,11 @@ def menu_usuario(sessao):
             print("6 - Registrar atendimento")
             print("7 - Consultar atendimentos")
 
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("8 - Editar atendimento")
+
         print("0 - Encerrar sessão")
 
         opcao = input("\nEscolha uma opção: ")
@@ -407,6 +511,9 @@ def menu_usuario(sessao):
 
         elif opcao == "7":
             consultar_atendimentos(sessao)
+
+        elif opcao == "8":
+            editar_atendimento(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")

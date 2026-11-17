@@ -262,3 +262,28 @@ def listar_atendimentos(terapeuta_id, paciente_id):
         ).fetchall()
 
     return atendimentos
+
+def editar_atendimento(
+    terapeuta_id,
+    atendimento_id,
+    data,
+    anotacoes
+):
+    """Edita um atendimento do terapeuta."""
+
+    with conectar() as conexao:
+        cursor = conexao.execute(
+            """
+            UPDATE atendimentos
+            SET data = ?, anotacoes = ?
+            WHERE id = ? AND terapeuta_id = ?
+            """,
+            (
+                data,
+                anotacoes,
+                atendimento_id,
+                terapeuta_id
+            )
+        )
+
+    return cursor.rowcount > 0
