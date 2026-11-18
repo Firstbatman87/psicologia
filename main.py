@@ -632,6 +632,34 @@ def consultar_proprios_atendimentos(sessao):
     except PermissionError as erro:
         print(erro)
 
+def consultar_meus_dados_paciente(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao,
+            "consultar_perfil"
+        )
+
+        if sessao["tipo"] != "paciente":
+            raise PermissionError(
+                "Esta função é exclusiva para pacientes."
+            )
+
+        paciente = banco.buscar_dados_paciente(
+            sessao["usuario_id"]
+        )
+
+        if paciente is None:
+            print("\nNenhum cadastro de paciente foi vinculado à sua conta.")
+            return
+
+        print("\n=== MEUS DADOS CADASTRAIS ===")
+        print(f"Nome: {paciente['nome']}")
+        print(f"E-mail: {paciente['email']}")
+        print(f"Telefone: {paciente['telefone']}")
+
+    except PermissionError as erro:
+        print(erro)
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")

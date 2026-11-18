@@ -379,3 +379,18 @@ def listar_atendimentos_paciente(usuario_id):
         ).fetchall()
 
         return atendimentos
+
+def buscar_dados_paciente(usuario_id):
+    """Busca os dados cadastrais do próprio paciente."""
+
+    with conectar() as conexao:
+        paciente = conexao.execute(
+            """
+            SELECT nome, email, telefone, criado_em
+            FROM pacientes
+            WHERE usuario_id = ?
+            """,
+            (usuario_id,)
+        ).fetchone()
+
+    return paciente
