@@ -394,3 +394,18 @@ def buscar_dados_paciente(usuario_id):
         ).fetchone()
 
     return paciente
+
+def editar_meus_dados_paciente(usuario_id, nome, email, telefone):
+    """Permite ao paciente editar seus próprios dados cadastrais."""
+
+    with conectar() as conexao:
+        cursor = conexao.execute(
+            """
+            UPDATE pacientes
+            SET nome = ?, email = ?, telefone = ?
+            WHERE usuario_id = ?
+            """,
+            (nome, email, telefone, usuario_id)
+        )
+
+    return cursor.rowcount > 0

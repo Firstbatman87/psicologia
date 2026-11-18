@@ -660,6 +660,43 @@ def consultar_meus_dados_paciente(sessao):
     except PermissionError as erro:
         print(erro)
 
+def editar_meus_dados_paciente(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao,
+            "consultar_perfil"
+        )
+
+        if sessao["tipo"] != "paciente":
+            raise PermissionError(
+                "Esta função é exclusiva para pacientes."
+            )
+
+        print("\n=== EDITAR MEUS DADOS ===")
+
+        nome = input("Novo nome: ").strip()
+        email = input("Novo e-mail: ").strip().lower()
+        telefone = input("Novo telefone: ").strip()
+
+        if not nome or not email:
+            print("\nNome e e-mail são obrigatórios.")
+            return
+
+        atualizado = banco.editar_meus_dados_paciente(
+            sessao["usuario_id"],
+            nome,
+            email,
+            telefone
+        )
+
+        if atualizado:
+            print("\nDados atualizados com sucesso!")
+        else:
+            print("\nNão foi possível atualizar os dados.")
+
+    except PermissionError as erro:
+        print(erro)
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
