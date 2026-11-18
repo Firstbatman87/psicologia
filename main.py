@@ -672,15 +672,28 @@ def editar_meus_dados_paciente(sessao):
                 "Esta função é exclusiva para pacientes."
             )
 
-        print("\n=== EDITAR MEUS DADOS ===")
+        paciente = banco.buscar_dados_paciente(
+            sessao["usuario_id"]
+        )
 
-        nome = input("Novo nome: ").strip()
-        email = input("Novo e-mail: ").strip().lower()
-        telefone = input("Novo telefone: ").strip()
-
-        if not nome or not email:
-            print("\nNome e e-mail são obrigatórios.")
+        if paciente is None:
+            print("\nCadastro de paciente não encontrado.")
             return
+
+        print("\n=== EDITAR MEUS DADOS ===")
+        print("Pressione Enter para manter o valor atual.")
+
+        nome = input(
+            f"Nome [{paciente['nome']}]: "
+        ).strip() or paciente["nome"]
+
+        email = input(
+            f"E-mail [{paciente['email']}]: "
+        ).strip().lower() or paciente["email"]
+
+        telefone = input(
+            f"Telefone [{paciente['telefone']}]: "
+        ).strip() or paciente["telefone"]
 
         atualizado = banco.editar_meus_dados_paciente(
             sessao["usuario_id"],
@@ -696,7 +709,7 @@ def editar_meus_dados_paciente(sessao):
 
     except PermissionError as erro:
         print(erro)
-
+        
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
