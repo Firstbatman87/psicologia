@@ -429,13 +429,65 @@ def editar_meus_dados_paciente(usuario_id, nome, email, telefone):
     """Permite ao paciente editar seus próprios dados cadastrais."""
 
     with conectar() as conexao:
+
+        # Localiza o cadastro vinculado à conta.
+        paciente = conexao.execute(
+            """
+            SELECT id, terapeuta_id
+            FROM pacientes
+            WHERE usuario_id = ?
+            """,
+            (usuario_id,)
+        ).fetchone()
+
+        if paciente is None:
+            return False
+
+        # Verifica se o e-mail pertence a outra conta.
+        conta_existente = conexao.execute(
+            """
+            SELECT id
+            FROM usuarios
+            WHERE LOWER(email) = LOWER(?)
+            AND id != ?
+            """,
+            (email.strip(), usuario_id)
+        ).fetchone()
+
+        if conta_existente:
+            raise ValueError(
+                "Este e-mail já pertence a outra conta."
+            )
+
+        # Verifica se outro paciente do mesmo terapeuta
+        # já utiliza esse e-mail.
+        paciente_existente = conexao.execute(
+            """
+            SELECT id
+            FROM pacientes
+            WHERE terapeuta_id = ?
+            AND LOWER(TRIM(email)) = LOWER(TRIM(?))
+            AND id != ?
+            """,
+            (
+                paciente["terapeuta_id"],
+                email,
+                paciente["id"]
+            )
+        ).fetchone()
+
+        if paciente_existente:
+            raise ValueError(
+                "Outro paciente deste terapeuta já utiliza esse e-mail."
+            )
+
         cursor = conexao.execute(
             """
             UPDATE pacientes
             SET nome = ?, email = ?, telefone = ?
             WHERE usuario_id = ?
             """,
-            (nome, email, telefone, usuario_id)
+            (nome.strip(), email.strip().lower(), telefone.strip(), usuario_id)
         )
 
     return cursor.rowcount > 0
