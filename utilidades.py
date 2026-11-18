@@ -28,3 +28,20 @@ def verificar_criacao(usuario):
         raise ValueError("Tipo de conta inválido.")
 
     return True
+
+def verificar_dados_paciente(nome, email):
+    """Valida os dados cadastrais do paciente."""
+
+    if not nome.strip():
+        raise ValueError("O nome não pode ficar vazio.")
+
+    if not email.strip():
+        raise ValueError("O e-mail não pode ficar vazio.")
+
+    if not re.fullmatch(
+        r"[^@\s]+@[^@\s]+\.[^@\s]+",
+        email.strip()
+    ):
+        raise ValueError("Digite um e-mail válido.")
+
+    return True

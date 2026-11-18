@@ -695,6 +695,8 @@ def editar_meus_dados_paciente(sessao):
             f"Telefone [{paciente['telefone']}]: "
         ).strip() or paciente["telefone"]
 
+        utilidades.verificar_dados_paciente(nome, email)
+
         atualizado = banco.editar_meus_dados_paciente(
             sessao["usuario_id"],
             nome,
@@ -709,7 +711,10 @@ def editar_meus_dados_paciente(sessao):
 
     except PermissionError as erro:
         print(erro)
-        
+
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
