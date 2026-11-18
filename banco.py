@@ -59,6 +59,17 @@ def criar_tabelas():
         """)
 
         conexao.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            idx_pacientes_terapeuta_email
+            ON pacientes (
+            terapeuta_id,
+            LOWER(TRIM(email))
+            )
+            WHERE email IS NOT NULL
+            AND TRIM(email) <> ''
+        """)
+
+        conexao.execute("""
             CREATE TABLE IF NOT EXISTS atendimentos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 terapeuta_id INTEGER NOT NULL,
@@ -180,16 +191,35 @@ def buscar_usuario_por_email(email):
 def cadastrar_paciente(terapeuta_id, nome, email, telefone):
     """Cadastra um paciente vinculado a um terapeuta."""
 
-    with conectar() as conexao:
-        conexao.execute(
-            """
-            INSERT INTO pacientes (terapeuta_id, nome, email, telefone)
-            VALUES (?, ?, ?, ?)
-            """,
-            (terapeuta_id, nome.strip(), email.strip(), telefone.strip())
-        )
+    try:
+        with conectar() as conexao:
+            conexao.execute(
+                """
+                INSERT INTO pacientes (
+                    terapeuta_id,
+                    nome,
+                    email,
+                    telefone
+                )
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    terapeuta_id,
+                    nome.strip(),
+                    email.strip().lower(),
+                    telefone.strip()
+                )
+            )
 
-    return True
+        return True
+
+    except sqlite3.IntegrityError as erro:
+        if "idx_pacientes_terapeuta_email" in str(erro):
+            raise ValueError(
+                "Este terapeuta já possui um paciente com esse e-mail."
+            )
+
+        raise
 
 def vincular_conta_paciente(terapeuta_id, paciente_id, email):
     """Vincula uma conta de paciente ao cadastro correspondente."""

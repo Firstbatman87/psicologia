@@ -73,13 +73,16 @@ def cadastrar_paciente(sessao):
 
         print("\n=== CADASTRAR PACIENTE ===")
 
-        nome = input("Nome do paciente: ")
-        email = input("E-mail do paciente: ")
-        telefone = input("Telefone do paciente: ")
+        nome = input("Nome do paciente: ").strip()
+        email = input("E-mail do paciente: ").strip().lower()
+        telefone = input("Telefone do paciente: ").strip()
 
-        if not nome.strip():
+        if not nome:
             print("\nO nome não pode ficar vazio.")
             return
+
+        if email:
+            utilidades.verificar_dados_paciente(nome, email)
 
         banco.cadastrar_paciente(
             sessao["usuario_id"],
@@ -93,6 +96,8 @@ def cadastrar_paciente(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
 
 def consultar_pacientes(sessao):
     """Consulta os pacientes do terapeuta autenticado."""
