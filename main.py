@@ -710,6 +710,9 @@ def menu_usuario(sessao):
         ):
             print("2 - Consultar meus atendimentos")
 
+        if sessao["tipo"] == "paciente":
+            print("3 - Editar meus dados")
+
         if permissoes.verificar_permissao(
             sessao, "cadastrar_pacientes"
         ):
@@ -775,7 +778,7 @@ def menu_usuario(sessao):
         elif opcao == "2" and sessao["tipo"] == "terapeuta":
             cadastrar_paciente(sessao)
 
-        elif opcao == "3":
+        elif opcao == "3" and sessao["tipo"] == "terapeuta":
             consultar_pacientes(sessao)
 
         elif opcao == "4":
@@ -798,6 +801,9 @@ def menu_usuario(sessao):
 
         elif opcao == "10":
             vincular_paciente(sessao)
+
+        elif opcao == "3" and sessao["tipo"] == "paciente":
+            editar_meus_dados_paciente(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
