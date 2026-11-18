@@ -718,7 +718,10 @@ def menu_usuario(sessao):
 
         opcao = input("\nEscolha uma opção: ")
 
-        if opcao == "1":
+        if opcao == "1" and sessao["tipo"] == "paciente":
+            consultar_meus_dados_paciente(sessao)
+
+        elif opcao == "1" and sessao["tipo"] == "terapeuta":
             permissoes.exigir_permissao(
                 sessao, "consultar_perfil"
             )
