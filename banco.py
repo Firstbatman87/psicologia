@@ -334,6 +334,23 @@ def excluir_paciente(terapeuta_id, paciente_id):
 
     return cursor.rowcount > 0
 
+def reativar_paciente(terapeuta_id, paciente_id):
+    """Reativa um paciente pertencente ao terapeuta."""
+
+    with conectar() as conexao:
+        cursor = conexao.execute(
+            """
+            UPDATE pacientes
+            SET ativo = 1
+            WHERE id = ?
+            AND terapeuta_id = ?
+            AND ativo = 0
+            """,
+            (paciente_id, terapeuta_id)
+        )
+
+    return cursor.rowcount > 0
+
 def registrar_atendimento(
     terapeuta_id,
     paciente_id,
@@ -396,6 +413,23 @@ def listar_atendimentos(terapeuta_id, paciente_id):
         ).fetchall()
 
     return atendimentos
+
+def listar_pacientes_inativos(terapeuta_id):
+    """Lista os pacientes inativos de um terapeuta."""
+
+    with conectar() as conexao:
+        pacientes = conexao.execute(
+            """
+            SELECT id, nome, email, telefone, criado_em
+            FROM pacientes
+            WHERE terapeuta_id = ?
+            AND ativo = 0
+            ORDER BY nome
+            """,
+            (terapeuta_id,)
+        ).fetchall()
+
+    return pacientes
 
 def editar_atendimento(
     terapeuta_id,

@@ -238,6 +238,41 @@ def excluir_paciente(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
+def reativar_paciente(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao,
+            "cadastrar_pacientes"
+        )
+
+        print("\n=== REATIVAR PACIENTE ===")
+
+        pacientes = banco.listar_pacientes_inativos(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nNão existem pacientes inativos.")
+            return
+
+        for paciente in pacientes:
+            print(f'{paciente["id"]} - {paciente["nome"]}')
+
+        paciente_id = int(input("\nID do paciente: "))
+
+        if banco.reativar_paciente(
+            sessao["usuario_id"],
+            paciente_id
+        ):
+            print("\nPaciente reativado com sucesso!")
+        else:
+            print("\nNão foi possível reativar esse paciente.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+    except ValueError:
+        print("\nDigite um ID válido.")
+
 def registrar_atendimento(sessao):
     """Registra um atendimento para um paciente."""
 
@@ -782,6 +817,11 @@ def menu_usuario(sessao):
         ):
             print("10 - Vincular conta de paciente")
 
+        if permissoes.verificar_permissao(
+            sessao, "cadastrar_pacientes"
+        ):
+            print("11 - Reativar paciente")
+
         print("0 - Encerrar sessão")
 
         opcao = input("\nEscolha uma opção: ")
@@ -832,6 +872,9 @@ def menu_usuario(sessao):
 
         elif opcao == "3" and sessao["tipo"] == "paciente":
             editar_meus_dados_paciente(sessao)
+
+        elif opcao == "11":
+            reativar_paciente(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
