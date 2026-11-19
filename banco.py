@@ -58,6 +58,18 @@ def criar_tabelas():
             )
         """)
 
+        colunas = conexao.execute(
+                "PRAGMA table_info(pacientes)"
+            ).fetchall()
+        
+        nomes_colunas = [coluna["name"] for coluna in colunas]
+        
+        if "ativo" not in nomes_colunas:
+                conexao.execute("""
+                ALTER TABLE pacientes
+                ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1
+            """)
+
         conexao.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS
             idx_pacientes_terapeuta_email
@@ -86,8 +98,12 @@ def criar_tabelas():
             )
         """)
 
+                conexao.execute("""
+            DROP TRIGGER IF EXISTS validar_atendimento_insert
+        """)
+
         conexao.execute("""
-            CREATE TRIGGER IF NOT EXISTS validar_atendimento_insert
+            CREATE TRIGGER validar_atendimento_insert
             BEFORE INSERT ON atendimentos
             FOR EACH ROW
             WHEN NOT EXISTS (
@@ -95,17 +111,22 @@ def criar_tabelas():
                 FROM pacientes
                 WHERE id = NEW.paciente_id
                 AND terapeuta_id = NEW.terapeuta_id
+                AND ativo = 1
             )
             BEGIN
                 SELECT RAISE(
                     ABORT,
-                    'Paciente não pertence a este terapeuta.'
+                    'Paciente não pertence a este terapeuta ou está inativo.'
                 );
             END
         """)
 
         conexao.execute("""
-            CREATE TRIGGER IF NOT EXISTS validar_atendimento_update
+            DROP TRIGGER IF EXISTS validar_atendimento_update
+        """)
+
+        conexao.execute("""
+            CREATE TRIGGER validar_atendimento_update
             BEFORE UPDATE ON atendimentos
             FOR EACH ROW
             WHEN NOT EXISTS (
@@ -113,25 +134,14 @@ def criar_tabelas():
                 FROM pacientes
                 WHERE id = NEW.paciente_id
                 AND terapeuta_id = NEW.terapeuta_id
+                AND ativo = 1
             )
             BEGIN
                 SELECT RAISE(
                     ABORT,
-                    'Paciente não pertence a este terapeuta.'
+                    'Paciente não pertence a este terapeuta ou está inativo.'
                 );
             END
-        """)
-
-        colunas = conexao.execute(
-            "PRAGMA table_info(pacientes)"
-        ).fetchall()
-
-        nomes_colunas = [coluna["name"] for coluna in colunas]
-
-        if "ativo" not in nomes_colunas:
-            conexao.execute("""
-            ALTER TABLE pacientes
-            ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1
         """)
 
 with conectar() as conexao:
