@@ -47,6 +47,11 @@ def entrar_conta():
         usuario["senha_hash"]
     )
 
+    if usuario["tipo"] == "paciente":
+        if not banco.paciente_esta_ativo(usuario["id"]):
+            print("\nEsta conta não possui um cadastro de paciente ativo.")
+            return None
+
     if not senha_correta:
         print("\nE-mail ou senha incorretos.")
         return None

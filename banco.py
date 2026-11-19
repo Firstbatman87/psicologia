@@ -538,3 +538,19 @@ def editar_meus_dados_paciente(usuario_id, nome, email, telefone):
         )
 
     return cursor.rowcount > 0
+
+def paciente_esta_ativo(usuario_id):
+    """Verifica se a conta possui um cadastro de paciente ativo."""
+
+    with conectar() as conexao:
+        paciente = conexao.execute(
+            """
+            SELECT id
+            FROM pacientes
+            WHERE usuario_id = ?
+            AND ativo = 1
+            """,
+            (usuario_id,)
+        ).fetchone()
+
+    return paciente is not None 
