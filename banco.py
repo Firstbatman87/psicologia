@@ -122,6 +122,18 @@ def criar_tabelas():
             END
         """)
 
+        colunas = conexao.execute(
+            "PRAGMA table_info(pacientes)"
+        ).fetchall()
+
+        nomes_colunas = [coluna["name"] for coluna in colunas]
+
+        if "ativo" not in nomes_colunas:
+            conexao.execute("""
+            ALTER TABLE pacientes
+            ADD COLUMN ativo INTEGER NOT NULL DEFAULT 1
+        """)
+
 with conectar() as conexao:
     colunas = conexao.execute(
         "PRAGMA table_info(pacientes)"
@@ -266,6 +278,7 @@ def listar_pacientes(terapeuta_id):
             SELECT id, nome, email, telefone, criado_em, usuario_id
             FROM pacientes
             WHERE terapeuta_id = ?
+            AND ativo = 1
             ORDER BY nome
             """,
             (terapeuta_id,)
@@ -295,13 +308,16 @@ def editar_paciente(terapeuta_id, paciente_id, nome, email, telefone):
     return cursor.rowcount > 0
 
 def excluir_paciente(terapeuta_id, paciente_id):
-    """Exclui um paciente pertencente ao terapeuta."""
+    """Inativa um paciente pertencente ao terapeuta."""
 
     with conectar() as conexao:
         cursor = conexao.execute(
             """
-            DELETE FROM pacientes
-            WHERE id = ? AND terapeuta_id = ?
+            UPDATE pacientes
+            SET ativo = 0
+            WHERE id = ?
+            AND terapeuta_id = ?
+            AND ativo = 1
             """,
             (paciente_id, terapeuta_id)
         )
@@ -314,9 +330,26 @@ def registrar_atendimento(
     data,
     anotacoes
 ):
-    """Registra um atendimento de um paciente."""
+    """Registra um atendimento de um paciente ativo."""
 
     with conectar() as conexao:
+
+        paciente = conexao.execute(
+            """
+            SELECT id
+            FROM pacientes
+            WHERE id = ?
+            AND terapeuta_id = ?
+            AND ativo = 1
+            """,
+            (paciente_id, terapeuta_id)
+        ).fetchone()
+
+        if paciente is None:
+            raise ValueError(
+                "Paciente não encontrado ou está inativo."
+            )
+
         conexao.execute(
             """
             INSERT INTO atendimentos (
@@ -335,7 +368,7 @@ def registrar_atendimento(
             )
         )
 
-    return True
+    return True 
 
 def listar_atendimentos(terapeuta_id, paciente_id):
     """Lista os atendimentos de um paciente."""
@@ -403,6 +436,7 @@ def listar_atendimentos_paciente(usuario_id):
             INNER JOIN pacientes
                 ON atendimentos.paciente_id = pacientes.id
             WHERE pacientes.usuario_id = ?
+            AND pacientes.ativo = 1
             ORDER BY atendimentos.data DESC
             """,
             (usuario_id,)
@@ -419,6 +453,7 @@ def buscar_dados_paciente(usuario_id):
             SELECT nome, email, telefone, criado_em
             FROM pacientes
             WHERE usuario_id = ?
+            AND ativo = 1
             """,
             (usuario_id,)
         ).fetchone()
@@ -436,6 +471,7 @@ def editar_meus_dados_paciente(usuario_id, nome, email, telefone):
             SELECT id, terapeuta_id
             FROM pacientes
             WHERE usuario_id = ?
+            AND ativo = 1
             """,
             (usuario_id,)
         ).fetchone()
@@ -448,7 +484,8 @@ def editar_meus_dados_paciente(usuario_id, nome, email, telefone):
             """
             SELECT id
             FROM usuarios
-            WHERE LOWER(email) = LOWER(?)
+            WHERE usuario_id = ?
+            AND ativo = 1
             AND id != ?
             """,
             (email.strip(), usuario_id)
