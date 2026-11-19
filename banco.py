@@ -98,7 +98,7 @@ def criar_tabelas():
             )
         """)
 
-                conexao.execute("""
+        conexao.execute("""
             DROP TRIGGER IF EXISTS validar_atendimento_insert
         """)
 
