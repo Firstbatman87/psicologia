@@ -760,6 +760,84 @@ def editar_meus_dados_paciente(sessao):
     except ValueError as erro:
         print(f"\nErro: {erro}")
 
+def consultar_agendamentos(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== MINHA AGENDA ===")
+
+        agendamentos = banco.listar_agendamentos(
+            sessao["usuario_id"]
+        )
+
+        if not agendamentos:
+            print("\nNão existem agendamentos cadastrados.")
+            return
+
+        for agendamento in agendamentos:
+            print(f"\nID: {agendamento['id']}")
+            print(f"Paciente: {agendamento['paciente_nome']}")
+            print(f"Data e horário: {agendamento['data_hora']}")
+            print(f"Duração: {agendamento['duracao']} minutos")
+            print(f"Status: {agendamento['status']}")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+def cadastrar_agendamento(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "cadastrar_pacientes"
+        )
+
+        print("\n=== CADASTRAR AGENDAMENTO ===")
+
+        pacientes = banco.listar_pacientes(
+            sessao["usuario_id"]
+        )
+
+        if not pacientes:
+            print("\nVocê não possui pacientes ativos.")
+            return
+
+        print("\n=== PACIENTES ===")
+
+        for paciente in pacientes:
+            print(f"{paciente['id']} - {paciente['nome']}")
+
+        paciente_id = int(input("\nID do paciente: "))
+
+        data_hora = input(
+            "Data e horário (AAAA-MM-DD HH:MM): "
+        ).strip()
+
+        duracao = input(
+            "Duração em minutos (pressione Enter para 50): "
+        ).strip()
+
+        duracao = 50 if not duracao else int(duracao)
+
+        utilidades.verificar_agendamento(
+            data_hora, duracao
+        )
+
+        banco.cadastrar_agendamento(
+            sessao["usuario_id"],
+            paciente_id,
+            data_hora,
+            duracao
+        )
+
+        print("\nAgendamento cadastrado com sucesso!")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
@@ -822,6 +900,16 @@ def menu_usuario(sessao):
         ):
             print("11 - Reativar paciente")
 
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("12 - Consultar agenda")
+
+        if permissoes.verificar_permissao(
+            sessao, "consultar_pacientes"
+        ):
+            print("13 - Cadastrar agendamento")
+
         print("0 - Encerrar sessão")
 
         opcao = input("\nEscolha uma opção: ")
@@ -875,6 +963,12 @@ def menu_usuario(sessao):
 
         elif opcao == "11":
             reativar_paciente(sessao)
+
+        elif opcao == "12":
+            consultar_agendamentos(sessao)
+
+        elif opcao == "13":
+            cadastrar_agendamento(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
