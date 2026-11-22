@@ -898,6 +898,63 @@ def atualizar_status_agendamento(sessao):
 
     except ValueError:
         print("\nDigite um ID válido.")
+        
+def editar_agendamento(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== EDITAR AGENDAMENTO ===")
+
+        agendamentos = banco.listar_agendamentos(
+            sessao["usuario_id"]
+        )
+
+        agendamentos = [
+            agendamento
+            for agendamento in agendamentos
+            if agendamento["status"] == "agendado"
+        ]
+
+        if not agendamentos:
+            print("\nNão existem agendamentos disponíveis para edição.")
+            return
+
+        for agendamento in agendamentos:
+            print(
+                f"\nID: {agendamento['id']} "
+                f"- {agendamento['paciente_nome']}"
+            )
+            print(f"Data: {agendamento['data_hora']}")
+            print(f"Duração: {agendamento['duracao']} minutos")
+
+        agendamento_id = int(
+            input("\nID do agendamento: ")
+        )
+
+        data_hora = input(
+            "Nova data e horário (AAAA-MM-DD HH:MM): "
+        ).strip()
+
+        duracao = int(
+            input("Nova duração em minutos: ")
+        )
+
+        banco.editar_agendamento(
+            sessao["usuario_id"],
+            agendamento_id,
+            data_hora,
+            duracao
+        )
+
+        print("\nAgendamento atualizado com sucesso!")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
 
 def menu_usuario(sessao):
     while True:
@@ -967,6 +1024,7 @@ def menu_usuario(sessao):
             print("12 - Consultar agenda")
             print("13 - Cadastrar agendamento")
             print("14 - Atualizar status de agendamento")
+            print("15 - Editar agendamento")
             
         print("0 - Encerrar sessão")
 
@@ -1030,6 +1088,9 @@ def menu_usuario(sessao):
 
         elif opcao == "14":
             atualizar_status_agendamento(sessao)
+
+        elif opcao == "15":
+            editar_agendamento(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")

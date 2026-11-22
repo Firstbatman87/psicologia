@@ -620,7 +620,8 @@ def paciente_esta_ativo(usuario_id):
 def verificar_conflito_agendamento(
     terapeuta_id,
     data_hora,
-    duracao
+    duracao,
+    agendamento_id=None
 ):
     """Verifica se existe outro agendamento no mesmo horário."""
 
@@ -637,8 +638,9 @@ def verificar_conflito_agendamento(
             FROM agendamentos
             WHERE terapeuta_id = ?
             AND status != 'cancelado'
+            AND (? IS NULL OR id != ?)
             """,
-            (terapeuta_id,)
+            (terapeuta_id, agendamento_id, agendamento_id)
         ).fetchall()
 
     for agendamento in agendamentos:
@@ -758,3 +760,56 @@ def atualizar_status_agendamento(
         )
 
     return cursor.rowcount > 0
+
+def editar_agendamento(
+    terapeuta_id,
+    agendamento_id,
+    data_hora,
+    duracao
+):
+    """Edita a data e a duração de um agendamento."""
+
+    utilidades.verificar_agendamento(data_hora, duracao)
+
+    with conectar() as conexao:
+        agendamento = conexao.execute(
+            """
+            SELECT id
+            FROM agendamentos
+            WHERE id = ?
+            AND terapeuta_id = ?
+            AND status = 'agendado'
+            """,
+            (agendamento_id, terapeuta_id)
+        ).fetchone()
+
+        if agendamento is None:
+            raise ValueError(
+                "Agendamento não encontrado ou não pode ser editado."
+            )
+
+        if verificar_conflito_agendamento(
+            terapeuta_id,
+            data_hora,
+            duracao,
+            agendamento_id
+        ):
+            raise ValueError(
+                "Já existe um agendamento nesse horário."
+            )
+
+        conexao.execute(
+            """
+            UPDATE agendamentos
+            SET data_hora = ?,
+                duracao = ?
+            WHERE id = ?
+            AND terapeuta_id = ?
+            """,
+            (
+                data_hora,
+                duracao,
+                agendamento_id,
+                terapeuta_id
+            )
+        )
