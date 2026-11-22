@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import sys
+import utilidades
 
 def pasta_do_programa():
     """Descobre a pasta onde o programa está."""
@@ -623,6 +624,7 @@ def cadastrar_agendamento(
 ):
     """Cadastra um agendamento para um paciente."""
 
+    utilidades.verificar_agendamento(data_hora, duracao)
     with conectar() as conexao:
         paciente = conexao.execute(
             """
@@ -652,3 +654,30 @@ def cadastrar_agendamento(
             """,
             (terapeuta_id, paciente_id, data_hora, duracao)
         )
+
+def listar_agendamentos(terapeuta_id):
+    """Lista os agendamentos de um terapeuta."""
+
+    with conectar() as conexao:
+        agendamentos = conexao.execute(
+            """
+            SELECT
+                agendamentos.id,
+                agendamentos.data_hora,
+                agendamentos.duracao,
+                agendamentos.status,
+                pacientes.nome AS paciente_nome
+
+            FROM agendamentos
+
+            INNER JOIN pacientes
+                ON agendamentos.paciente_id = pacientes.id
+
+            WHERE agendamentos.terapeuta_id = ?
+
+            ORDER BY agendamentos.data_hora
+            """,
+            (terapeuta_id,)
+        ).fetchall()
+
+    return agendamentos

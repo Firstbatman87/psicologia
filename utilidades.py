@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 def verificar_criacao(usuario):
     """Valida os dados necessários para criar uma conta."""
@@ -41,5 +42,30 @@ def verificar_dados_paciente(nome, email):
         email.strip()
     ):
         raise ValueError("Digite um e-mail válido.")
+
+    return True
+
+def verificar_agendamento(data_hora, duracao):
+    """Valida os dados básicos de um agendamento."""
+
+    try:
+        data = datetime.strptime(
+            data_hora,
+            "%Y-%m-%d %H:%M"
+        )
+    except ValueError:
+        raise ValueError(
+            "Data inválida. Use o formato AAAA-MM-DD HH:MM."
+        )
+
+    if data <= datetime.now():
+        raise ValueError(
+            "O agendamento precisa ser para uma data futura."
+        )
+
+    if not isinstance(duracao, int) or duracao <= 0:
+        raise ValueError(
+            "A duração precisa ser um número inteiro positivo."
+        )
 
     return True
