@@ -1,8 +1,6 @@
-
 import os
 import sqlite3
 import sys
-
 
 def pasta_do_programa():
     """Descobre a pasta onde o programa está."""
@@ -95,6 +93,34 @@ def criar_tabelas():
 
                 FOREIGN KEY (paciente_id)
                     REFERENCES pacientes(id)
+            )
+        """)
+
+        conexao.execute("""
+            CREATE TABLE IF NOT EXISTS agendamentos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                terapeuta_id INTEGER NOT NULL,
+                paciente_id INTEGER NOT NULL,
+                data_hora TEXT NOT NULL,
+                duracao INTEGER NOT NULL DEFAULT 50,
+                status TEXT NOT NULL DEFAULT 'agendado',
+                criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                FOREIGN KEY (terapeuta_id)
+                    REFERENCES usuarios(id),
+
+                FOREIGN KEY (paciente_id)
+                    REFERENCES pacientes(id),
+
+                CHECK (duracao > 0),
+
+                CHECK (
+                    status IN (
+                        'agendado',
+                        'realizado',
+                        'cancelado'
+                    )
+                )
             )
         """)
 

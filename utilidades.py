@@ -1,6 +1,4 @@
-
 import re
-
 
 def verificar_criacao(usuario):
     """Valida os dados necessários para criar uma conta."""

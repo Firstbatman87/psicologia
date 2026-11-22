@@ -1,6 +1,4 @@
-
 import bcrypt
-
 
 def gerar_hash(senha):
     """Gera um hash bcrypt para a senha."""
