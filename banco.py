@@ -614,3 +614,41 @@ def paciente_esta_ativo(usuario_id):
         ).fetchone()
 
     return paciente is not None 
+
+def cadastrar_agendamento(
+    terapeuta_id,
+    paciente_id,
+    data_hora,
+    duracao=50
+):
+    """Cadastra um agendamento para um paciente."""
+
+    with conectar() as conexao:
+        paciente = conexao.execute(
+            """
+            SELECT id
+            FROM pacientes
+            WHERE id = ?
+            AND terapeuta_id = ?
+            AND ativo = 1
+            """,
+            (paciente_id, terapeuta_id)
+        ).fetchone()
+
+        if paciente is None:
+            raise ValueError(
+                "Paciente não encontrado ou está inativo."
+            )
+
+        conexao.execute(
+            """
+            INSERT INTO agendamentos (
+                terapeuta_id,
+                paciente_id,
+                data_hora,
+                duracao
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (terapeuta_id, paciente_id, data_hora, duracao)
+        )
