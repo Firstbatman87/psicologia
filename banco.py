@@ -2,6 +2,7 @@ import os
 import sqlite3
 import sys
 import utilidades
+from datetime import datetime, timedelta
 
 def pasta_do_programa():
     """Descobre a pasta onde o programa está."""
@@ -616,6 +617,45 @@ def paciente_esta_ativo(usuario_id):
 
     return paciente is not None 
 
+def verificar_conflito_agendamento(
+    terapeuta_id,
+    data_hora,
+    duracao
+):
+    """Verifica se existe outro agendamento no mesmo horário."""
+
+    inicio_novo = datetime.strptime(
+        data_hora, "%Y-%m-%d %H:%M"
+    )
+
+    fim_novo = inicio_novo + timedelta(minutes=duracao)
+
+    with conectar() as conexao:
+        agendamentos = conexao.execute(
+            """
+            SELECT data_hora, duracao
+            FROM agendamentos
+            WHERE terapeuta_id = ?
+            AND status != 'cancelado'
+            """,
+            (terapeuta_id,)
+        ).fetchall()
+
+    for agendamento in agendamentos:
+        inicio_existente = datetime.strptime(
+            agendamento["data_hora"],
+            "%Y-%m-%d %H:%M"
+        )
+
+        fim_existente = inicio_existente + timedelta(
+            minutes=agendamento["duracao"]
+        )
+
+        if inicio_novo < fim_existente and fim_novo > inicio_existente:
+            return True
+
+    return False
+
 def cadastrar_agendamento(
     terapeuta_id,
     paciente_id,
@@ -625,6 +665,14 @@ def cadastrar_agendamento(
     """Cadastra um agendamento para um paciente."""
 
     utilidades.verificar_agendamento(data_hora, duracao)
+    if verificar_conflito_agendamento(
+        terapeuta_id,
+        data_hora,
+        duracao
+    ):
+        raise ValueError(
+            "Já existe um agendamento nesse horário."
+        )
     with conectar() as conexao:
         paciente = conexao.execute(
             """
@@ -681,3 +729,32 @@ def listar_agendamentos(terapeuta_id):
         ).fetchall()
 
     return agendamentos
+
+def atualizar_status_agendamento(
+    terapeuta_id,
+    agendamento_id,
+    novo_status
+):
+    """Atualiza o status de um agendamento."""
+
+    status_permitidos = (
+        "agendado",
+        "realizado",
+        "cancelado"
+    )
+
+    if novo_status not in status_permitidos:
+        raise ValueError("Status inválido.")
+
+    with conectar() as conexao:
+        cursor = conexao.execute(
+            """
+            UPDATE agendamentos
+            SET status = ?
+            WHERE id = ?
+            AND terapeuta_id = ?
+            """,
+            (novo_status, agendamento_id, terapeuta_id)
+        )
+
+    return cursor.rowcount > 0

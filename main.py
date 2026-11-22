@@ -838,6 +838,67 @@ def cadastrar_agendamento(sessao):
     except ValueError as erro:
         print(f"\nErro: {erro}")
 
+def atualizar_status_agendamento(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== ATUALIZAR AGENDAMENTO ===")
+
+        agendamentos = banco.listar_agendamentos(
+            sessao["usuario_id"]
+        )
+
+        if not agendamentos:
+            print("\nNão existem agendamentos cadastrados.")
+            return
+
+        for agendamento in agendamentos:
+            print(
+                f"\nID: {agendamento['id']} "
+                f"- {agendamento['paciente_nome']}"
+            )
+            print(f"Data: {agendamento['data_hora']}")
+            print(f"Status: {agendamento['status']}")
+
+        agendamento_id = int(
+            input("\nID do agendamento: ")
+        )
+
+        print("\n1 - Agendado")
+        print("2 - Realizado")
+        print("3 - Cancelado")
+
+        opcao = input("\nNovo status: ")
+
+        status = {
+            "1": "agendado",
+            "2": "realizado",
+            "3": "cancelado"
+        }
+
+        if opcao not in status:
+            print("\nOpção inválida.")
+            return
+
+        atualizado = banco.atualizar_status_agendamento(
+            sessao["usuario_id"],
+            agendamento_id,
+            status[opcao]
+        )
+
+        if atualizado:
+            print("\nStatus atualizado com sucesso!")
+        else:
+            print("\nAgendamento não encontrado.")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+    except ValueError:
+        print("\nDigite um ID válido.")
+
 def menu_usuario(sessao):
     while True:
         print("\n=== ÁREA DO USUÁRIO ===")
@@ -904,12 +965,9 @@ def menu_usuario(sessao):
             sessao, "consultar_pacientes"
         ):
             print("12 - Consultar agenda")
-
-        if permissoes.verificar_permissao(
-            sessao, "consultar_pacientes"
-        ):
             print("13 - Cadastrar agendamento")
-
+            print("14 - Atualizar status de agendamento")
+            
         print("0 - Encerrar sessão")
 
         opcao = input("\nEscolha uma opção: ")
@@ -969,6 +1027,9 @@ def menu_usuario(sessao):
 
         elif opcao == "13":
             cadastrar_agendamento(sessao)
+
+        elif opcao == "14":
+            atualizar_status_agendamento(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
