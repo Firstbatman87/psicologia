@@ -805,6 +805,23 @@ def atualizar_status_agendamento(
         raise ValueError("Status inválido.")
 
     with conectar() as conexao:
+
+        if novo_status == "cancelado":
+            atendimento = conexao.execute(
+                """
+                SELECT id
+                FROM atendimentos
+                WHERE agendamento_id = ?
+                """,
+                (agendamento_id,)
+            ).fetchone()
+
+            if atendimento is not None:
+                raise ValueError(
+                    "Não é possível cancelar um agendamento "
+                    "que já possui um atendimento registrado."
+                )
+
         cursor = conexao.execute(
             """
             UPDATE agendamentos
