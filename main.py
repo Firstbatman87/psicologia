@@ -955,8 +955,8 @@ def atualizar_status_agendamento(sessao):
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
 
-    except ValueError:
-        print("\nDigite um ID válido.")
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
         
 def editar_agendamento(sessao):
     try:
