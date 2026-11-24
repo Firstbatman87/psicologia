@@ -171,6 +171,28 @@ def criar_tabelas():
                 );
             END
         """)
+        
+        colunas = conexao.execute(
+            "PRAGMA table_info(atendimentos)"
+        ).fetchall()
+
+        nomes_colunas = [
+            coluna["name"] for coluna in colunas
+        ]
+
+        if "agendamento_id" not in nomes_colunas:
+            conexao.execute("""
+                ALTER TABLE atendimentos
+                ADD COLUMN agendamento_id INTEGER
+                REFERENCES agendamentos(id)
+            """)
+
+        conexao.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS
+            idx_atendimentos_agendamento_id
+            ON atendimentos(agendamento_id)
+            WHERE agendamento_id IS NOT NULL
+        """)
 
 with conectar() as conexao:
     colunas = conexao.execute(
@@ -383,7 +405,8 @@ def registrar_atendimento(
     terapeuta_id,
     paciente_id,
     data,
-    anotacoes
+    anotacoes,
+    agendamento_id=None
 ):
     """Registra um atendimento de um paciente ativo."""
 
@@ -405,25 +428,58 @@ def registrar_atendimento(
                 "Paciente não encontrado ou está inativo."
             )
 
-        conexao.execute(
-            """
-            INSERT INTO atendimentos (
-                terapeuta_id,
-                paciente_id,
-                data,
-                anotacoes
-            )
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                terapeuta_id,
-                paciente_id,
-                data,
-                anotacoes
-            )
-        )
+        if agendamento_id is not None:
+            agendamento = conexao.execute(
+                """
+                SELECT id
+                FROM agendamentos
+                WHERE id = ?
+                AND terapeuta_id = ?
+                AND paciente_id = ?
+                AND status = 'realizado'
+                """,
+                (
+                    agendamento_id,
+                    terapeuta_id,
+                    paciente_id
+                )
+            ).fetchone()
 
-    return True 
+            if agendamento is None:
+                raise ValueError(
+                    "Agendamento não encontrado, não pertence "
+                    "a este paciente ou ainda não foi realizado."
+                )
+
+        try:
+            conexao.execute(
+                """
+                INSERT INTO atendimentos (
+                    terapeuta_id,
+                    paciente_id,
+                    data,
+                    anotacoes,
+                    agendamento_id
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    terapeuta_id,
+                    paciente_id,
+                    data,
+                    anotacoes,
+                    agendamento_id
+                )
+            )
+
+        except sqlite3.IntegrityError as erro:
+            if agendamento_id is not None:
+                raise ValueError(
+                    "Este agendamento já possui um atendimento registrado."
+                ) from erro
+            raise
+
+    return True
 
 def listar_atendimentos(terapeuta_id, paciente_id):
     """Lista os atendimentos de um paciente."""
@@ -871,6 +927,39 @@ def listar_agendamentos_por_periodo(
             ORDER BY agendamentos.data_hora
             """,
             (terapeuta_id, inicio, fim)
+        ).fetchall()
+
+    return agendamentos
+
+def listar_agendamentos_sem_atendimento(terapeuta_id):
+    """Lista agendamentos realizados sem atendimento vinculado."""
+
+    with conectar() as conexao:
+        agendamentos = conexao.execute(
+            """
+            SELECT
+                agendamentos.id,
+                agendamentos.paciente_id,
+                agendamentos.data_hora,
+                agendamentos.duracao,
+                pacientes.nome AS paciente_nome
+
+            FROM agendamentos
+
+            INNER JOIN pacientes
+                ON agendamentos.paciente_id = pacientes.id
+
+            LEFT JOIN atendimentos
+                ON atendimentos.agendamento_id = agendamentos.id
+
+            WHERE agendamentos.terapeuta_id = ?
+            AND agendamentos.status = 'realizado'
+            AND pacientes.ativo = 1
+            AND atendimentos.id IS NULL
+
+            ORDER BY agendamentos.data_hora
+            """,
+            (terapeuta_id,)
         ).fetchall()
 
     return agendamentos

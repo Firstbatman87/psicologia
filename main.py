@@ -275,45 +275,99 @@ def reativar_paciente(sessao):
         print("\nDigite um ID válido.")
 
 def registrar_atendimento(sessao):
-    """Registra um atendimento para um paciente."""
+    """Registra um atendimento manualmente ou por agendamento."""
 
     try:
         permissoes.exigir_permissao(
             sessao, "consultar_pacientes"
         )
 
-        pacientes = banco.listar_pacientes(
-            sessao["usuario_id"]
-        )
+        print("\n=== REGISTRAR ATENDIMENTO ===")
+        print("1 - Registrar manualmente")
+        print("2 - Usar agendamento realizado")
 
-        if not pacientes:
-            print("\nVocê ainda não possui pacientes cadastrados.")
-            return
+        opcao = input("\nEscolha uma opção: ")
 
-        print("\n=== SELECIONAR PACIENTE ===")
+        agendamento_id = None
 
-        for paciente in pacientes:
-            print(f"{paciente['id']} - {paciente['nome']}")
+        if opcao == "1":
+            pacientes = banco.listar_pacientes(
+                sessao["usuario_id"]
+            )
 
-        try:
+            if not pacientes:
+                print("\nVocê ainda não possui pacientes cadastrados.")
+                return
+
+            print("\n=== SELECIONAR PACIENTE ===")
+
+            for paciente in pacientes:
+                print(f"{paciente['id']} - {paciente['nome']}")
+
             paciente_id = int(input("\nID do paciente: "))
-        except ValueError:
-            print("\nDigite um ID válido.")
+
+            paciente = next(
+                (p for p in pacientes if p["id"] == paciente_id),
+                None
+            )
+
+            if paciente is None:
+                print("\nPaciente não encontrado.")
+                return
+
+            data = input(
+                "Data do atendimento (AAAA-MM-DD): "
+            ).strip()
+
+        elif opcao == "2":
+            agendamentos = banco.listar_agendamentos_sem_atendimento(
+                sessao["usuario_id"]
+            )
+
+            if not agendamentos:
+                print("\nNão existem agendamentos disponíveis.")
+                return
+
+            print("\n=== AGENDAMENTOS DISPONÍVEIS ===")
+
+            for agendamento in agendamentos:
+                print(
+                    f"\nID: {agendamento['id']}"
+                    f"\nPaciente: {agendamento['paciente_nome']}"
+                    f"\nData: {agendamento['data_hora']}"
+                )
+
+            agendamento_id = int(
+                input("\nID do agendamento: ")
+            )
+
+            agendamento = next(
+                (
+                    a for a in agendamentos
+                    if a["id"] == agendamento_id
+                ),
+                None
+            )
+
+            if agendamento is None:
+                print("\nAgendamento não encontrado.")
+                return
+
+            paciente_id = agendamento["paciente_id"]
+            data = agendamento["data_hora"][:10]
+
+            print(
+                f"\nAtendimento de {agendamento['paciente_nome']}"
+            )
+            print(f"Data: {data}")
+
+        else:
+            print("\nOpção inválida.")
             return
 
-        paciente = next(
-            (p for p in pacientes if p["id"] == paciente_id),
-            None
+        anotacoes = input(
+            "\nAnotações do atendimento: "
         )
-
-        if paciente is None:
-            print("\nPaciente não encontrado.")
-            return
-
-        print(f"\n=== ATENDIMENTO DE {paciente['nome'].upper()} ===")
-
-        data = input("Data do atendimento (AAAA-MM-DD): ")
-        anotacoes = input("Anotações do atendimento: ")
 
         if not data.strip() or not anotacoes.strip():
             print("\nA data e as anotações são obrigatórias.")
@@ -323,13 +377,17 @@ def registrar_atendimento(sessao):
             sessao["usuario_id"],
             paciente_id,
             data,
-            anotacoes
+            anotacoes,
+            agendamento_id
         )
 
         print("\nAtendimento registrado com sucesso!")
 
     except PermissionError as erro:
         print(f"\nAcesso negado: {erro}")
+
+    except ValueError as erro:
+        print(f"\nErro: {erro}")
 
 def consultar_atendimentos(sessao):
     """Consulta o histórico de atendimentos de um paciente."""
