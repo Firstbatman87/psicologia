@@ -2,7 +2,7 @@ import banco
 import utilidades
 import seguranca
 import permissoes
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def menu():
     print("\n=== FUNCIONA MENTE ===")
@@ -994,6 +994,74 @@ def consultar_agenda_diaria(sessao):
 
     except ValueError:
         print("\nData inválida. Use o formato AAAA-MM-DD.")
+        
+def consultar_agenda_semanal(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== AGENDA SEMANAL ===")
+
+        data = input(
+            "Informe uma data da semana (AAAA-MM-DD): "
+        ).strip()
+
+        data_referencia = datetime.strptime(
+            data, "%Y-%m-%d"
+        ).date()
+
+        inicio = data_referencia - timedelta(
+            days=data_referencia.weekday()
+        )
+
+        fim = inicio + timedelta(days=6)
+
+        agendamentos = banco.listar_agendamentos_por_periodo(
+            sessao["usuario_id"],
+            inicio.isoformat(),
+            fim.isoformat()
+        )
+
+        print(
+            f"\nSemana: {inicio.strftime('%d/%m/%Y')} "
+            f"a {fim.strftime('%d/%m/%Y')}"
+        )
+
+        if not agendamentos:
+            print("\nNão existem agendamentos nessa semana.")
+            return
+
+        data_atual = None
+
+        for agendamento in agendamentos:
+            data_agendamento = (
+                agendamento["data_hora"][:10]
+            )
+
+            if data_agendamento != data_atual:
+                data_atual = data_agendamento
+
+                data_formatada = datetime.strptime(
+                    data_atual, "%Y-%m-%d"
+                ).strftime("%d/%m/%Y")
+
+                print(f"\n--- {data_formatada} ---")
+
+            horario = agendamento["data_hora"][11:16]
+
+            print(
+                f"{horario} | "
+                f"{agendamento['paciente_nome']} | "
+                f"{agendamento['duracao']} min | "
+                f"{agendamento['status']}"
+            )
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+    except ValueError:
+        print("\nData inválida. Use o formato AAAA-MM-DD.")
 
 def menu_usuario(sessao):
     while True:
@@ -1065,6 +1133,7 @@ def menu_usuario(sessao):
             print("14 - Atualizar status de agendamento")
             print("15 - Editar agendamento")
             print("16 - Consultar agenda diária")
+            print("17 - Consultar agenda semanal")
             
         print("0 - Encerrar sessão")
 
@@ -1134,6 +1203,9 @@ def menu_usuario(sessao):
             
         elif opcao == "16":
             consultar_agenda_diaria(sessao)
+            
+        elif opcao == "17":
+            consultar_agenda_semanal(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
