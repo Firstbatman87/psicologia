@@ -813,3 +813,31 @@ def editar_agendamento(
                 terapeuta_id
             )
         )
+        
+def listar_agendamentos_por_data(terapeuta_id, data):
+    """Lista os agendamentos de um terapeuta em uma data específica."""
+
+    with conectar() as conexao:
+        agendamentos = conexao.execute(
+            """
+            SELECT
+                agendamentos.id,
+                agendamentos.data_hora,
+                agendamentos.duracao,
+                agendamentos.status,
+                pacientes.nome AS paciente_nome
+
+            FROM agendamentos
+
+            INNER JOIN pacientes
+                ON agendamentos.paciente_id = pacientes.id
+
+            WHERE agendamentos.terapeuta_id = ?
+            AND DATE(agendamentos.data_hora) = ?
+
+            ORDER BY agendamentos.data_hora
+            """,
+            (terapeuta_id, data)
+        ).fetchall()
+
+    return agendamentos

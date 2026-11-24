@@ -2,6 +2,7 @@ import banco
 import utilidades
 import seguranca
 import permissoes
+from datetime import datetime
 
 def menu():
     print("\n=== FUNCIONA MENTE ===")
@@ -955,6 +956,44 @@ def editar_agendamento(sessao):
 
     except ValueError as erro:
         print(f"\nErro: {erro}")
+        
+def consultar_agenda_diaria(sessao):
+    try:
+        permissoes.exigir_permissao(
+            sessao, "consultar_pacientes"
+        )
+
+        print("\n=== AGENDA DIÁRIA ===")
+
+        data = input(
+            "Informe a data (AAAA-MM-DD): "
+        ).strip()
+
+        datetime.strptime(data, "%Y-%m-%d")
+
+        agendamentos = banco.listar_agendamentos_por_data(
+            sessao["usuario_id"],
+            data
+        )
+
+        if not agendamentos:
+            print("\nNão existem agendamentos nessa data.")
+            return
+
+        for agendamento in agendamentos:
+            horario = agendamento["data_hora"][11:16]
+
+            print(f"\nID: {agendamento['id']}")
+            print(f"Horário: {horario}")
+            print(f"Paciente: {agendamento['paciente_nome']}")
+            print(f"Duração: {agendamento['duracao']} minutos")
+            print(f"Status: {agendamento['status']}")
+
+    except PermissionError as erro:
+        print(f"\nAcesso negado: {erro}")
+
+    except ValueError:
+        print("\nData inválida. Use o formato AAAA-MM-DD.")
 
 def menu_usuario(sessao):
     while True:
@@ -1025,6 +1064,7 @@ def menu_usuario(sessao):
             print("13 - Cadastrar agendamento")
             print("14 - Atualizar status de agendamento")
             print("15 - Editar agendamento")
+            print("16 - Consultar agenda diária")
             
         print("0 - Encerrar sessão")
 
@@ -1091,6 +1131,9 @@ def menu_usuario(sessao):
 
         elif opcao == "15":
             editar_agendamento(sessao)
+            
+        elif opcao == "16":
+            consultar_agenda_diaria(sessao)
 
         elif opcao == "0":
             print("\nSessão encerrada.")
